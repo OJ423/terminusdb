@@ -21,8 +21,16 @@ function get (agent, path, params) {
   const queryString = params.string('queryString')
   const query = commonGetParams(new Params(params.object('query')))
   const bodyString = params.string('bodyString')
-  const body = commonGetParams(new Params(params.object('body')))
+  const bodyParams = new Params(params.object('body'))
+  const docQuery = bodyParams.object('query')
+  const body = commonGetParams(bodyParams)
   params.assertEmpty()
+
+  // This is not a parameter common to both the query string and body, so we add
+  // it back in.
+  if (docQuery) {
+    body.query = docQuery
+  }
 
   const request = agent.get(path)
   if (queryString) {

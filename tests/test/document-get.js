@@ -91,6 +91,18 @@ describe('document-get', function () {
     }
   })
 
+  function expectInstance (object, expected) {
+    expect(object['@type']).to.equal(expected['@type'])
+    delete object['@type']
+    expect(object.name).to.equal(expected.name)
+    delete object.name
+    expect(object.age).to.equal(expected.age)
+    delete object.age
+    expect(object['@id']).to.equal('Person/' + expected.name)
+    delete object['@id']
+    expect(Object.keys(object).length).to.equal(0)
+  }
+
   function expectInstances (objects, params) {
     params = new Params(params)
     const skip = params.integer('skip', 0)
@@ -106,17 +118,7 @@ describe('document-get', function () {
 
     expect(objects).to.be.an('array').that.has.lengthOf(count)
     for (let i = 0; i < count; i++) {
-      const object = objects[i]
-      const expected = instances[i + skip]
-      expect(object['@type']).to.equal(expected['@type'])
-      delete object['@type']
-      expect(object.name).to.equal(expected.name)
-      delete object.name
-      expect(object.age).to.equal(expected.age)
-      delete object.age
-      expect(object['@id']).to.equal('Person/' + expected.name)
-      delete object['@id']
-      expect(Object.keys(object).length).to.equal(0)
+      expectInstance(objects[i], instances[i + skip])
     }
   }
 
@@ -233,5 +235,35 @@ describe('document-get', function () {
         expect(r.body['api:error']['api:value']).to.deep.equal(value)
       })
     }
+  })
+
+  describe('type and query @type have same results', function () {
+    const options = [
+      { query: { type: 'Person', as_list: true } },
+      { body: { query: { '@type': 'Person' }, as_list: true } },
+    ]
+    for (const option of options) {
+      it(JSON.stringify(option), async function () {
+        const r = await document
+          .get(agent, docPath, option)
+          .then(document.verifyGetSuccess)
+        expectInstances(r.body)
+      })
+    }
+  })
+
+  it('query @type and field', async function () {
+    const query = { '@type': 'Person', name: 'Plato' }
+    const r = await document
+      .get(agent, docPath, { body: { query: query } })
+      .then(document.verifyGetSuccess)
+    expectInstance(r.body, instances[1])
+  })
+
+  it('query fails on field without @type', async function () {
+    this.skip()
+    await document
+      .get(agent, docPath, { body: { query: { name: 'Plato' } } })
+    // TODO: Check for failure and error message
   })
 })
