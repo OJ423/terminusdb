@@ -237,7 +237,7 @@ describe('document-get', function () {
     }
   })
 
-  describe('type and query @type have same results', function () {
+  describe('gives same query results for type and @type', function () {
     const options = [
       { query: { type: 'Person', as_list: true } },
       { body: { query: { '@type': 'Person' }, as_list: true } },
@@ -252,7 +252,7 @@ describe('document-get', function () {
     }
   })
 
-  it('query @type and field', async function () {
+  it('succeeds for query @type and field', async function () {
     const query = { '@type': 'Person', name: 'Plato' }
     const r = await document
       .get(agent, docPath, { body: { query: query } })
@@ -260,10 +260,10 @@ describe('document-get', function () {
     expectInstance(r.body, instances[1])
   })
 
-  it('query fails on field without @type', async function () {
-    this.skip()
-    await document
+  it('fails query on field without type or @type', async function () {
+    const r = await document
       .get(agent, docPath, { body: { query: { name: 'Plato' } } })
-    // TODO: Check for failure and error message
+      .then(document.verifyGetFailure)
+    expect(r.body['api:error']['@type']).to.equal('api:QueryMissingType')
   })
 })
